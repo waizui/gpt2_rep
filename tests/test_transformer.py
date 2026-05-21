@@ -1,11 +1,11 @@
-from transformer.tokenizer import PreProcessor
+from transformer.tokenizer import SimpleTokenizer
 
 
 def test_preprocess():
     text = "Hello, world. Is this-- a test?"
-    preprocessor = PreProcessor()
+    tokenizer = SimpleTokenizer()
 
-    preprocessed = preprocessor.preprocess(text)
+    preprocessed = tokenizer.preprocess(text)
 
     assert preprocessed == [
         "Hello",
@@ -22,14 +22,14 @@ def test_preprocess():
 
 
 def test_encode():
-    preprocessor = PreProcessor()
-    preprocessor.load("Hello, world. Is this-- a test?")
+    tokenizer = SimpleTokenizer()
+    tokenizer.load("Hello, world. Is this-- a test?")
 
-    assert preprocessor.encode("Hello, test?") == [0, 1, 8, 9]
+    assert tokenizer.encode("Hello, test?") == [4, 0, 7, 3]
 
 
 def test_decode():
-    preprocessor = PreProcessor()
-    preprocessor.load("Hello, world. Is this-- a test?")
+    tokenizer = SimpleTokenizer()
+    tokenizer.load("Hello, world. Is this-- a test?")
 
-    assert preprocessor.decode([0, 1, 8, 9]) == "Hello, test?"
+    assert tokenizer.decode([4, 0, 7, 3]) == "Hello, test?"
