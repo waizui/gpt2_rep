@@ -110,7 +110,7 @@ class MultiHeadAttention(nn.Module):
         self.dropout = nn.Dropout(dropout)
         self.out_proj = nn.Linear(d_out, d_out)
 
-        # diagonal=1, set zero when upper element's distance to diagonal >= 1
+        # diagonal=1, set zero where upper element's distance to diagonal >= 1
         triu = torch.triu(torch.ones(context_len, context_len), diagonal=1)
         # tensors that not parameters
         self.register_buffer("mask", triu)
