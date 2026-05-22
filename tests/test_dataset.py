@@ -5,7 +5,6 @@ import torch
 from transformer.dataset import GPTDataset, create_dataloader
 from transformer.tokenizer import GPTTokenizer
 
-
 ASSET_TEXT = Path(__file__).resolve().parents[1] / "assets" / "the-verdict.txt"
 
 
@@ -54,3 +53,16 @@ def test_create_dataloader_loads_real_asset_text():
     assert input_batch[0].tolist() == ids[:max_len]
     assert target_batch[0].tolist() == ids[1 : max_len + 1]
     assert torch.equal(input_batch[:, 1:], target_batch[:, :-1])
+
+
+def test_embedding():
+    max_len = 4
+    text = _load_asset_text()
+    loader = create_dataloader(
+        text, batch_size=8, max_len=max_len, stride=max_len, shuffle=False
+    )
+
+    data_iter  =  iter(loader)
+    inputs,targets = next(data_iter)
+    print("Token Ids:\n",inputs)
+    print("\n Inputs shape:\n",inputs.shape)

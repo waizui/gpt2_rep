@@ -1,3 +1,5 @@
+from logging import error
+from typing import Tuple
 import torch
 from torch.utils.data import Dataset, DataLoader
 
@@ -21,7 +23,7 @@ class GPTDataset(Dataset):
     def __len__(self):
         return len(self.input_ids)
 
-    def __getitem__(self, index):
+    def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor]:
         return self.input_ids[index], self.target_ids[index]
 
 
@@ -34,6 +36,8 @@ def create_dataloader(
     drop_last=True,  # delete remaining data if less than batch size
     num_workers=0,
 ) -> DataLoader:
+    if len(text) < max_len:
+        raise Exception("error: Text too short")
     tokenizer = GPTTokenizer()
     dataset = GPTDataset(text, tokenizer, max_len, stride)
 
