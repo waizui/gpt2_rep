@@ -36,8 +36,17 @@ class TransformerBlock(nn.Module):
 
 
 class LayerNorm(nn.Module):
-    def __init__(self, normalized_shape: int, eps=1e-5) -> None:
+    def __init__(self, emb_dim: int, eps=1e-5) -> None:
         super().__init__()
+        self.eps = eps
+        self.shift = nn.Parameter(torch.zeros(emb_dim))
+        self.scale = nn.Parameter(torch.ones(emb_dim))
 
-    def forward(self, x):
-        return x
+    def forward(self, x: Tensor):
+        # keepdim: [[1,2],[3,4]]->mean(dim=-1)-> [1.5,3.5]->keepdim -> [[1.5],[3.5]]
+        mean = x.mean(dim=-1, keepdim=True)
+        # unbiased: do not use bessel's correction, divided by n, not (n-1)
+        var = x.var(dim=-1, keepdim=True, unbiased=False)
+        # make mean=0, var=1
+        norm_x = (x - mean) / torch.sqrt(var + self.eps)
+        return self.scale * norm_x + self.shift
