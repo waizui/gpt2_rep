@@ -1,7 +1,8 @@
 import torch
 from transformer.config import GPTConfig
-from transformer.gpt import GPTModel, gen_text_simple
+from transformer.gpt import GPTModel
 from transformer.tokenizer import GPTTokenizer
+from transformer.train import gen_text_simple
 
 
 def test_gpt_model_prints_param_num():
