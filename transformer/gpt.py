@@ -1,9 +1,12 @@
+from math import log
 import torch
 import torch.nn as nn
-from torch import Tensor
+from torch import Tensor, mode
 
+from transformer.attention import MultiHeadAttention
 from transformer.config import GPTConfig
 from transformer.embedding import GPTEmbedding
+from transformer.feedforward import FeedForward
 
 
 class GPTModel(nn.Module):
@@ -23,15 +26,46 @@ class GPTModel(nn.Module):
         x = self.emb(in_idx)
         x = self.trf_blocks(x)
         x = self.final_norm(x)
+        # some model use shared weights(weight tying) instead of a new layer
         logits = self.out_head(x)
         return logits
+
+    def param_num(self) -> int:
+        num = sum(p.numel() for p in self.parameters())
+        return num
 
 
 class TransformerBlock(nn.Module):
     def __init__(self, cfg: GPTConfig) -> None:
         super().__init__()
+        self.att = MultiHeadAttention(
+            cfg.emb_dim,
+            cfg.emb_dim,
+            cfg.context_len,
+            cfg.drop_rate,
+            cfg.n_heads,
+            cfg.qkv_bias,
+        )
+
+        self.ff = FeedForward(cfg)
+        self.norm1 = LayerNorm(cfg.emb_dim)
+        self.norm2 = LayerNorm(cfg.emb_dim)
+        self.drop_shorcut = nn.Dropout(cfg.drop_rate)
 
     def forward(self, x):
+        shortcut = x
+        # pre-layernorm(norm befor attention), better training result
+        x = self.norm1(x)
+        x = self.att(x)
+        x = self.drop_shorcut(x)
+        x = x + shortcut
+
+        shortcut = x
+        x = self.norm2(x)
+        x = self.ff(x)
+        x = self.drop_shorcut(x)
+        x = x + shortcut
+
         return x
 
 
@@ -52,3 +86,15 @@ class LayerNorm(nn.Module):
         return self.scale * norm_x + self.shift
 
 
+def gen_text_simple(model: GPTModel, idx: Tensor, max_new_tokens, context_size):
+    for _ in range(max_new_tokens):
+        idx_cond = idx[:, -context_size:]
+        with torch.no_grad():
+            logits = model(idx_cond)
+
+        logits = logits[:, -1, :]
+        probs = torch.softmax(logits, dim=-1)
+        idx_next = torch.argmax(probs, dim=-1, keepdim=True)
+        idx = torch.cat((idx, idx_next), dim=1)
+
+    return idx
