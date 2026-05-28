@@ -2,7 +2,7 @@ import torch
 from transformer.config import GPTConfig
 from transformer.gpt import GPTModel
 from transformer.tokenizer import GPTTokenizer
-from transformer.train import gen_text_simple
+from transformer.train import gen_text
 
 
 def test_gpt_model_prints_param_num():
@@ -24,7 +24,7 @@ def test_gent_text_simple():
     cfg = GPTConfig()
     model = GPTModel(cfg)
 
-    out = gen_text_simple(
+    out = gen_text(
         model, encoded, max_new_tokens=6, context_size=cfg.context_len
     )
 
