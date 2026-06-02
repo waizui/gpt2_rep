@@ -48,6 +48,7 @@ def gen_text(
 
     return idx
 
+
 def text_to_token_ids(text, tokenizer: Tokenizer) -> Tensor:
     return torch.tensor(tokenizer.encode(text)).unsqueeze(0)
 
@@ -189,7 +190,7 @@ def create_data(file, cfg: GPTConfig):
     return train_lader, val_lader
 
 
-def train(file, start_context):
+def train(file, start_context) -> tuple[GPTModel, GPTConfig]:
     torch.manual_seed(123)
     cfg = GPTConfig()
     cfg.context_len = 256
@@ -216,3 +217,5 @@ def train(file, start_context):
         start_context=start_context,
         tokenizer=GPTTokenizer(),
     )
+
+    return model, cfg

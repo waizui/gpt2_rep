@@ -1,6 +1,7 @@
 import json
 from os import path
 import os
+import sys
 
 import tensorflow
 
@@ -13,6 +14,12 @@ from transformer.train import gen_text, text_to_token_ids, token_ids_to_text
 
 
 def main():
+
+    argc = len(sys.argv)
+    input = "Every effort moves you"
+    if argc > 1:
+        input = sys.argv[1]
+
     weight_path = "./data/openai-gpt2/"
     model_size = "124M"
 
@@ -45,7 +52,7 @@ def main():
     tokenizer = GPTTokenizer()
     ids = gen_text(
         model,
-        idx=text_to_token_ids("Every effort moves you", tokenizer),
+        idx=text_to_token_ids(input, tokenizer),
         max_new_tokens=25,
         context_size=cfg.context_len,
         top_k=50,
