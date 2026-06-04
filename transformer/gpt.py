@@ -15,7 +15,7 @@ class GPTModel(nn.Module):
             cfg.context_len, cfg.vocab_size, cfg.emb_dim, cfg.drop_rate
         )
         self.trf_blocks = nn.Sequential(
-            *[TransformerBlock(cfg) for _ in range(cfg.n_heads)]
+            *[TransformerBlock(cfg) for _ in range(cfg.n_layers)]
         )
 
         self.final_norm = LayerNorm(cfg.emb_dim)
