@@ -169,7 +169,7 @@ def gen_and_print_simple(
     model.train()
 
 
-def create_data(file, cfg: GPTConfig):
+def create_data(file, cfg: GPTConfig, batch_size):
     with open(file, "r", encoding="utf-8") as file:
         text_data = file.read()
 
@@ -177,8 +177,6 @@ def create_data(file, cfg: GPTConfig):
     split_idx = int(ratio * len(text_data))
     train_data = text_data[:split_idx]
     val_data = text_data[split_idx:]
-
-    batch_size = 2
 
     train_lader = create_dataloader(
         train_data, batch_size, cfg.context_len, stride=cfg.context_len, num_workers=0
@@ -199,7 +197,7 @@ def train(file, start_context) -> tuple[GPTModel, GPTConfig]:
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.0004, weight_decay=0.1)
     num_epochs = 10
 
-    train_loader, val_loader = create_data(file, cfg)
+    train_loader, val_loader = create_data(file, cfg, batch_size=2)
 
     device = torch.device("cuda")
 
