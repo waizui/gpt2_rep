@@ -49,20 +49,20 @@ class TransformerBlock(nn.Module):
         self.ff = FeedForward(cfg)
         self.norm1 = LayerNorm(cfg.emb_dim)
         self.norm2 = LayerNorm(cfg.emb_dim)
-        self.drop_shorcut = nn.Dropout(cfg.drop_rate)
+        self.drop_shortcut = nn.Dropout(cfg.drop_rate)
 
     def forward(self, x):
         shortcut = x
         # pre-layernorm(norm befor attention), better training result
         x = self.norm1(x)
         x = self.att(x)
-        x = self.drop_shorcut(x)
+        x = self.drop_shortcut(x)
         x = x + shortcut
 
         shortcut = x
         x = self.norm2(x)
         x = self.ff(x)
-        x = self.drop_shorcut(x)
+        x = self.drop_shortcut(x)
         x = x + shortcut
 
         return x

@@ -1,7 +1,5 @@
 from pathlib import Path
 
-from torch import mode
-from transformer.config import GPTConfig
 from transformer.tokenizer import GPTTokenizer
 from transformer.train import gen_text, text_to_token_ids, token_ids_to_text, train
 
