@@ -4,7 +4,6 @@ from torch import Tensor
 from torch.types import Device
 from torch.utils.data import DataLoader
 
-from transformer import tokenizer
 from transformer.config import GPTConfig
 from transformer.dataset import create_dataloader
 from transformer.gpt import GPTModel

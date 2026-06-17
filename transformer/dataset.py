@@ -50,3 +50,83 @@ def create_dataloader(
     )
 
     return loader
+
+
+def format_input(entry):
+    """
+    Alpaca style
+
+    entry:
+    {
+        "instruction":
+        "input":
+        "output":
+    },
+    """
+
+    instruction_text = (
+        f"Below is an instruction that describes a task. "
+        f"Write a response that appropriately completes the request."
+        f"\n\n### Instruction:\n{entry['instruction']}"
+    )
+
+    input_text = f"\n\n### Input:\n{entry['input']}" if entry["input"] else ""
+
+    response_text = f"\n\n### Response:\n{entry['output']}"
+
+    return instruction_text + input_text, response_text
+
+
+def custom_collate_fn(
+    batch,
+    pad_token_id=50256,  # vocab size
+    ignore_index=-100,
+    allowed_max_len=None,
+    device="cuda",
+):
+    batch_max_len = max(len(item) + 1 for item in batch)
+    input_lst, target_lst = [], []
+
+    for item in batch:
+        new_item = item.copy()
+        new_item = [pad_token_id]
+
+        padded = new_item + [pad_token_id] * (batch_max_len - len(new_item))
+
+        inputs = torch.tensor(padded[:-1])
+        targets = torch.tensor(padded[1:])
+
+        mask = targets == pad_token_id
+        indices = torch.nonzero(mask).squeeze()
+        if indices.numel() > 1:
+            # fill all padding tokens with ignore_index except the first one
+            targets[indices[1:]] = ignore_index
+
+        if allowed_max_len is not None:
+            inputs = inputs[:allowed_max_len]
+            targets = targets[:allowed_max_len]
+
+        input_lst.append(inputs)
+        target_lst.append(targets)
+
+    inputs_tensor = torch.stack(input_lst).to(device)
+    targets_tensor = torch.stack(target_lst).to(device)
+
+    return inputs_tensor, targets_tensor
+
+
+class InstructionDataset(Dataset):
+
+    def __init__(self, data, tokenizer: Tokenizer) -> None:
+        self.data = data
+        self.encoded_texts = []
+        for entry in data:
+            input, response = format_input(entry)
+            full_text = input + response
+            self.encoded_texts.append(tokenizer.encode(full_text))
+
+    def __getitem__(self, index) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self.encoded_texts[index]
+
+    def __len__(self):
+        return len(self.data)

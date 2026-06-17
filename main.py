@@ -28,6 +28,7 @@ def main():
     cfg.context_len = 1024
     cfg.qkv_bias = True
     model = GPTModel(cfg)
+    print(f"model param num: {model.param_num()}")
 
     _, params = load_gpt_settings_params(model_size)
 
@@ -41,6 +42,7 @@ def main():
         top_k=50,
         temperature=1.0,
     )
+
 
     print("LLM: \n", token_ids_to_text(ids, tokenizer))
 
