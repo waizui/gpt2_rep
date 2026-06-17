@@ -1,3 +1,7 @@
+import json
+import os
+
+import tensorflow as tf
 import torch
 from torch._prims_common import Tensor
 from transformer.gpt import GPTModel
@@ -78,3 +82,43 @@ def load_weights_into_gpt(gpt: GPTModel, params: dict):
     gpt.final_norm.shift = assign(gpt.final_norm.shift, params["b"])
     # use same weights since gpt uses tying
     gpt.out_head.weight = assign(gpt.out_head.weight, params["wte"])
+
+
+def load_gpt2_params_from_tf_ckpt(ckpt_path, settings):
+    # Initialize parameters dictionary with empty blocks for each layer
+    params = {"blocks": [{} for _ in range(settings["n_layer"])]}
+
+    # Iterate over each variable in the checkpoint
+    for name, _ in tf.train.list_variables(ckpt_path):
+        # Load the variable and remove singleton dimensions
+        variable_array = np.squeeze(tf.train.load_variable(ckpt_path, name))
+
+        # Process the variable name to extract relevant parts
+        variable_name_parts = name.split("/")[1:]  # Skip the 'model/' prefix
+
+        # Identify the target dictionary for the variable
+        target_dict = params
+        if variable_name_parts[0].startswith("h"):
+            layer_number = int(variable_name_parts[0][1:])
+            target_dict = params["blocks"][layer_number]
+
+        # Recursively access or create nested dictionaries
+        for key in variable_name_parts[1:-1]:
+            target_dict = target_dict.setdefault(key, {})
+
+        # Assign the variable array to the last key
+        last_key = variable_name_parts[-1]
+        target_dict[last_key] = variable_array
+
+    return params
+
+def load_gpt_settings_params(model_size, weight_path="./data/openai-gpt2/"):
+    param_dir = os.path.join(weight_path, model_size)
+    tf_ckpt_path = tf.train.latest_checkpoint(param_dir)
+    settings = json.load(
+        open(os.path.join(param_dir, "hparams.json"), "r", encoding="utf-8")
+    )
+    params = load_gpt2_params_from_tf_ckpt(tf_ckpt_path, settings)
+
+    return settings, params
+

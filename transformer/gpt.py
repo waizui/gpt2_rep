@@ -83,5 +83,3 @@ class LayerNorm(nn.Module):
         # make mean=0, var=1
         norm_x = (x - mean) / torch.sqrt(var + self.eps)
         return self.scale * norm_x + self.shift
-
-
