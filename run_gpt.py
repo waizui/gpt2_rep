@@ -13,7 +13,7 @@ def main():
     parser.add_argument("--input", default="Every effort moves you")
     parser.add_argument(
         "--model-size",
-        default="124M",
+        default="355M",
         choices=tuple(MODEL_CONFIGS),
     )
     args = parser.parse_args()
@@ -43,10 +43,11 @@ def main():
     ids = gen_text(
         model,
         idx=text_to_token_ids(input, tokenizer).to(device),
-        max_new_tokens=25,
+        max_new_tokens=100,
         context_size=cfg.context_len,
         top_k=50,
         temperature=1.0,
+        eos_id=50256,
     )
 
     print("LLM: \n", token_ids_to_text(ids.cpu(), tokenizer))

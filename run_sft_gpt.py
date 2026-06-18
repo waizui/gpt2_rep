@@ -14,23 +14,23 @@ from transformer.train import gen_text, text_to_token_ids, token_ids_to_text
 def main():
     parser = ArgumentParser()
 
-    default_input, _ = format_input(json.loads("""
-    {
-        "instruction": "Rewrite the sentence using a simile.",
-        "input": "The car is very fast.",
-        "output": "The car is as fast as lightning."
-    }
-    """))
-
-    parser.add_argument("--input", default=default_input)
+    parser.add_argument("--instruction", default="Rewrite the sentence using a simile.")
+    parser.add_argument("--input", default="The car is very fast.")
     parser.add_argument(
         "--model-size",
-        default="124M",
+        default="355M",
         choices=tuple(MODEL_CONFIGS),
     )
     args = parser.parse_args()
 
-    input = args.input
+    input, _ = format_input(json.loads(f"""
+    {{
+        "instruction": "{args.instruction}",
+        "input": "{args.input}",
+        "output": ""
+    }}
+    """))
+
     model_size = args.model_size
 
     model_config = MODEL_CONFIGS[model_size]
@@ -53,10 +53,11 @@ def main():
     ids = gen_text(
         model,
         idx=text_to_token_ids(input, tokenizer).to(device),
-        max_new_tokens=50,
+        max_new_tokens=100,
         context_size=cfg.context_len,
         top_k=50,
         temperature=1.0,
+        eos_id=50256,
     )
 
     print("LLM: \n", token_ids_to_text(ids.cpu(), tokenizer))

@@ -77,16 +77,19 @@ if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--file", default="./assets/instruction-data.json")
     parser.add_argument("--batch-size", type=int, default=4)
+    parser.add_argument("--device", default="cuda")
     parser.add_argument(
         "--model-size",
         default="124M",
         choices=tuple(MODEL_CONFIGS),
     )
+
     args = parser.parse_args()
 
     file = args.file
     model_size = args.model_size
     batch_size = args.batch_size
+    device = torch.device(args.device)
 
     model_config = MODEL_CONFIGS[model_size]
 
@@ -102,7 +105,6 @@ if __name__ == "__main__":
     load_weights_into_gpt(model, params)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005, weight_decay=0.1)
-    device = torch.device("cuda")
     fine_tune(file, model, optimizer, device, batch_size)
 
     save_model(model, optimizer, f"./data/trained/fine-tune/{model_size}.pth")
