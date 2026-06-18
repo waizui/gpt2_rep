@@ -1,4 +1,6 @@
 from argparse import ArgumentParser
+
+import torch
 from load_gpt import load_gpt_settings_params, load_weights_into_gpt
 from transformer.config import MODEL_CONFIGS, GPTConfig
 from transformer.gpt import GPTModel
@@ -33,18 +35,21 @@ def main():
     _, params = load_gpt_settings_params(model_size)
 
     load_weights_into_gpt(model, params)
+
+    device = torch.device("cuda")
+
+    model.to(device)
     tokenizer = GPTTokenizer()
     ids = gen_text(
         model,
-        idx=text_to_token_ids(input, tokenizer),
+        idx=text_to_token_ids(input, tokenizer).to(device),
         max_new_tokens=25,
         context_size=cfg.context_len,
         top_k=50,
         temperature=1.0,
     )
 
-
-    print("LLM: \n", token_ids_to_text(ids, tokenizer))
+    print("LLM: \n", token_ids_to_text(ids.cpu(), tokenizer))
 
 
 if __name__ == "__main__":

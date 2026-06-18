@@ -1,9 +1,16 @@
 import json
 import os
 
-import tensorflow as tf
 import torch
 from torch._prims_common import Tensor
+
+try:
+    # TensorFlow can crash later Triton imports in this environment.
+    import triton  # noqa: F401
+except ImportError:
+    pass
+
+import tensorflow as tf
 from transformer.gpt import GPTModel
 import numpy as np
 
@@ -121,4 +128,3 @@ def load_gpt_settings_params(model_size, weight_path="./data/openai-gpt2/"):
     params = load_gpt2_params_from_tf_ckpt(tf_ckpt_path, settings)
 
     return settings, params
-

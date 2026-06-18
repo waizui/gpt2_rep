@@ -1,17 +1,27 @@
+from argparse import ArgumentParser
+import json
+
 import torch
 import torch.nn as nn
-from torch import Tensor
+from torch import Tensor, cuda
 from torch.types import Device
-from torch.utils.data import DataLoader
 
-from transformer.config import GPTConfig
+from load_gpt import load_gpt_settings_params, load_weights_into_gpt
+from transformer.config import MODEL_CONFIGS, GPTConfig
+from transformer.dataset import create_instruction_dataloader, format_input
 from transformer.gpt import GPTModel
-from transformer.tokenizer import GPTTokenizer, Tokenizer
+from transformer.tokenizer import GPTTokenizer
+from transformer.train import (
+    gen_text,
+    text_to_token_ids,
+    token_ids_to_text,
+    train_simple,
+)
 
 
-def create_data(file, cfg: GPTConfig, batch_size):
+def create_data(file, batch_size, device):
     with open(file, "r", encoding="utf-8") as file:
-        text_data = file.read()
+        text_data = json.load(file)
 
     train_portion = int(0.85 * len(text_data))
     test_portion = int(0.1 * len(text_data))
@@ -26,19 +36,69 @@ def create_data(file, cfg: GPTConfig, batch_size):
         f"Validation set length: {len(val_data)}\n"
     )
 
-    train_lader = create_dataloader(
-        train_data, batch_size, cfg.context_len, stride=cfg.context_len, num_workers=0
+    train_loader = create_instruction_dataloader(train_data, batch_size, device=device)
+    test_loader = create_instruction_dataloader(test_data, batch_size, device=device)
+    val_loader = create_instruction_dataloader(val_data, batch_size, device=device)
+    return train_loader, test_loader, val_loader, val_data[0]
+
+
+def fine_tune(file, model: GPTModel, batch_size: int):
+    torch.manual_seed(123)
+
+    device = torch.device("cpu")
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005, weight_decay=0.1)
+    num_epochs = 2
+
+    train_loader, test_loader, val_loader, val_data0 = create_data(
+        file, batch_size=batch_size, device=device
     )
-    test_lader = create_dataloader(
-        test_data, batch_size, cfg.context_len, stride=cfg.context_len, num_workers=0
+
+    input, _ = format_input(val_data0)
+
+    model.to(device)
+
+    train_losses, val_losses, token_seen = train_simple(
+        model,
+        train_loader,
+        val_loader,
+        optimizer,
+        device,
+        num_epochs,
+        eval_freq=5,
+        eval_iter=5,
+        start_context=input,
+        tokenizer=GPTTokenizer(),
     )
 
-    val_loader = create_dataloader(
-        val_data, batch_size, cfg.context_len, stride=cfg.context_len, num_workers=0
+    return model
+
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--file", default="./assets/instruction-data.json")
+    parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument(
+        "--model-size",
+        default="355M",
+        choices=tuple(MODEL_CONFIGS),
     )
+    args = parser.parse_args()
 
-    return train_lader, test_lader, val_loader
+    file = args.file
+    model_size = args.model_size
+    batch_size = args.batch_size
 
+    model_config = MODEL_CONFIGS[model_size]
 
-def train():
-    pass
+    cfg = GPTConfig()
+    cfg.emb_dim = model_config["emb_dim"]
+    cfg.n_layers = model_config["n_layers"]
+    cfg.n_heads = model_config["n_heads"]
+    cfg.context_len = 1024
+    cfg.qkv_bias = True
+    model = GPTModel(cfg)
+
+    _, params = load_gpt_settings_params(model_size)
+    load_weights_into_gpt(model, params)
+
+    fine_tune(file, model, batch_size)

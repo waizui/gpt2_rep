@@ -1,3 +1,4 @@
+from functools import partial
 from logging import error
 from typing import Tuple
 import torch
@@ -78,7 +79,7 @@ def format_input(entry):
 
 
 def custom_collate_fn(
-    batch,
+    batch,  # [batch_size, instruction_length]
     pad_token_id=50256,  # vocab size
     ignore_index=-100,
     allowed_max_len=None,
@@ -89,7 +90,7 @@ def custom_collate_fn(
 
     for item in batch:
         new_item = item.copy()
-        new_item = [pad_token_id]
+        new_item.append(pad_token_id)
 
         padded = new_item + [pad_token_id] * (batch_max_len - len(new_item))
 
@@ -130,3 +131,29 @@ class InstructionDataset(Dataset):
 
     def __len__(self):
         return len(self.data)
+
+
+def create_instruction_dataloader(
+    text,
+    batch_size=4,
+    shuffle=True,
+    drop_last=True,
+    num_workers=0,
+    device="cuda",
+) -> DataLoader:
+    tokenizer = GPTTokenizer()
+    dataset = InstructionDataset(text, tokenizer)
+
+    # prefill params
+    collate_fn = partial(custom_collate_fn, allowed_max_len=512, device=device)
+
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        collate_fn=collate_fn,
+        shuffle=shuffle,
+        drop_last=drop_last,
+        num_workers=num_workers,
+    )
+
+    return loader
