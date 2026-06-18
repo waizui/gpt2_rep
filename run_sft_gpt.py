@@ -1,19 +1,50 @@
 from argparse import ArgumentParser
+from enum import Flag
 import json
 
+import numpy as np
 import torch
-from load_gpt import load_gpt_settings_params, load_weights_into_gpt
 from transformer.config import MODEL_CONFIGS, GPTConfig
 from transformer.dataset import format_input
+from transformer.fine_tune import create_data
 from transformer.gpt import GPTModel
 from transformer.io import load_model
 from transformer.tokenizer import GPTTokenizer
 from transformer.train import gen_text, text_to_token_ids, token_ids_to_text
 
 
+def run_test_data(model: GPTModel, tokenizer: GPTTokenizer, device, cfg, limit=10):
+
+    train_loader, test_loader, val_loader, val_data = create_data(
+        "./assets/instruction-data.json", batch_size=1, device=device
+    )
+
+    samples = np.random.choice(len(val_data), min(limit, len(val_data)), replace=False)
+
+    for i in samples:
+        input, response = format_input(val_data[i])
+        ids = gen_text(
+            model,
+            idx=text_to_token_ids(input, tokenizer).to(device),
+            max_new_tokens=100,
+            context_size=cfg.context_len,
+            top_k=50,
+            temperature=1.0,
+            eos_id=50256,
+        )
+
+        print(
+            "-" * 200,
+            "\nLLM: \n",
+            token_ids_to_text(ids.cpu(), tokenizer),
+            "\n\nExpected Response:",
+            response,
+        )
+
+
 def main():
     parser = ArgumentParser()
-
+    parser.add_argument("--test", action="store_true")
     parser.add_argument("--instruction", default="Rewrite the sentence using a simile.")
     parser.add_argument("--input", default="The car is very fast.")
     parser.add_argument(
@@ -50,6 +81,11 @@ def main():
     load_model(model, None, device, f"./data/trained/fine-tune/{model_size}.pth")
 
     tokenizer = GPTTokenizer()
+
+    if args.test:
+        run_test_data(model, tokenizer, device, cfg)
+        return
+
     ids = gen_text(
         model,
         idx=text_to_token_ids(input, tokenizer).to(device),

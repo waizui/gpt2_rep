@@ -43,7 +43,7 @@ def main():
     ids = gen_text(
         model,
         idx=text_to_token_ids(input, tokenizer).to(device),
-        max_new_tokens=100,
+        max_new_tokens=50,
         context_size=cfg.context_len,
         top_k=50,
         temperature=1.0,

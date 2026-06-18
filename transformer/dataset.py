@@ -79,8 +79,8 @@ def format_input(entry):
 
 
 def custom_collate_fn(
-    batch,  # [batch_size, instruction_length]
-    pad_token_id=50256,  # vocab size
+    batch,  # [batch_size]
+    pad_token_id=50256,  # vocab size, end of sequence id
     ignore_index=-100,
     allowed_max_len=None,
     device="cuda",
@@ -110,8 +110,8 @@ def custom_collate_fn(
         input_lst.append(inputs)
         target_lst.append(targets)
 
-    inputs_tensor = torch.stack(input_lst).to(device)
-    targets_tensor = torch.stack(target_lst).to(device)
+    inputs_tensor = torch.stack(input_lst).to(device)  # [batch_size,batch_max_len]
+    targets_tensor = torch.stack(target_lst).to(device) 
 
     return inputs_tensor, targets_tensor
 

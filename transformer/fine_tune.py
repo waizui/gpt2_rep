@@ -2,10 +2,7 @@ from argparse import ArgumentParser
 import json
 
 import torch
-import torch.nn as nn
-from torch import Tensor, cuda
 from torch.optim.optimizer import Optimizer
-from torch.types import Device
 
 from load_gpt import load_gpt_settings_params, load_weights_into_gpt
 from transformer.config import MODEL_CONFIGS, GPTConfig
@@ -14,9 +11,6 @@ from transformer.gpt import GPTModel
 from transformer.io import save_model
 from transformer.tokenizer import GPTTokenizer
 from transformer.train import (
-    gen_text,
-    text_to_token_ids,
-    token_ids_to_text,
     train_simple,
 )
 
@@ -41,19 +35,18 @@ def create_data(file, batch_size, device):
     train_loader = create_instruction_dataloader(train_data, batch_size, device=device)
     test_loader = create_instruction_dataloader(test_data, batch_size, device=device)
     val_loader = create_instruction_dataloader(val_data, batch_size, device=device)
-    return train_loader, test_loader, val_loader, val_data[0]
+    return train_loader, test_loader, val_loader, val_data
 
 
 def fine_tune(file, model: GPTModel, optimizer: Optimizer, device, batch_size: int):
     torch.manual_seed(123)
-
     num_epochs = 2
 
-    train_loader, test_loader, val_loader, val_data0 = create_data(
+    train_loader, test_loader, val_loader, val_data = create_data(
         file, batch_size=batch_size, device=device
     )
 
-    input, _ = format_input(val_data0)
+    input, _ = format_input(val_data[0])
 
     model.to(device)
 
