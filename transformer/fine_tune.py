@@ -4,12 +4,14 @@ import json
 import torch
 import torch.nn as nn
 from torch import Tensor, cuda
+from torch.optim.optimizer import Optimizer
 from torch.types import Device
 
 from load_gpt import load_gpt_settings_params, load_weights_into_gpt
 from transformer.config import MODEL_CONFIGS, GPTConfig
 from transformer.dataset import create_instruction_dataloader, format_input
 from transformer.gpt import GPTModel
+from transformer.io import save_model
 from transformer.tokenizer import GPTTokenizer
 from transformer.train import (
     gen_text,
@@ -42,11 +44,9 @@ def create_data(file, batch_size, device):
     return train_loader, test_loader, val_loader, val_data[0]
 
 
-def fine_tune(file, model: GPTModel, batch_size: int):
+def fine_tune(file, model: GPTModel, optimizer: Optimizer, device, batch_size: int):
     torch.manual_seed(123)
 
-    device = torch.device("cpu")
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005, weight_decay=0.1)
     num_epochs = 2
 
     train_loader, test_loader, val_loader, val_data0 = create_data(
@@ -76,10 +76,10 @@ def fine_tune(file, model: GPTModel, batch_size: int):
 if __name__ == "__main__":
     parser = ArgumentParser()
     parser.add_argument("--file", default="./assets/instruction-data.json")
-    parser.add_argument("--batch-size", type=int, default=1)
+    parser.add_argument("--batch-size", type=int, default=4)
     parser.add_argument(
         "--model-size",
-        default="355M",
+        default="124M",
         choices=tuple(MODEL_CONFIGS),
     )
     args = parser.parse_args()
@@ -101,4 +101,8 @@ if __name__ == "__main__":
     _, params = load_gpt_settings_params(model_size)
     load_weights_into_gpt(model, params)
 
-    fine_tune(file, model, batch_size)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0005, weight_decay=0.1)
+    device = torch.device("cuda")
+    fine_tune(file, model, optimizer, device, batch_size)
+
+    save_model(model, optimizer, f"./data/trained/fine-tune/{model_size}.pth")
