@@ -63,8 +63,6 @@ def fine_tune(file, model: GPTModel, optimizer: Optimizer, device, batch_size: i
         tokenizer=GPTTokenizer(),
     )
 
-    return model
-
 
 if __name__ == "__main__":
     parser = ArgumentParser()
@@ -75,7 +73,7 @@ if __name__ == "__main__":
         "--model-size",
         default="124M",
         choices=tuple(MODEL_CONFIGS),
-    )
+    )  # 355M model is better for this task
 
     args = parser.parse_args()
 
@@ -90,7 +88,6 @@ if __name__ == "__main__":
     cfg.emb_dim = model_config["emb_dim"]
     cfg.n_layers = model_config["n_layers"]
     cfg.n_heads = model_config["n_heads"]
-    cfg.context_len = 1024
     cfg.qkv_bias = True
     model = GPTModel(cfg)
 

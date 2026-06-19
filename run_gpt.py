@@ -27,7 +27,6 @@ def main():
     cfg.emb_dim = model_config["emb_dim"]
     cfg.n_layers = model_config["n_layers"]
     cfg.n_heads = model_config["n_heads"]
-    cfg.context_len = 1024
     cfg.qkv_bias = True
     model = GPTModel(cfg)
     print(f"model param num: {model.param_num()}")

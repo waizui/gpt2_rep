@@ -1,12 +1,15 @@
+from argparse import ArgumentParser
+
 import torch
 import torch.nn as nn
 from torch import Tensor
 from torch.types import Device
 from torch.utils.data import DataLoader
 
-from transformer.config import GPTConfig
+from transformer.config import MODEL_CONFIGS, GPTConfig
 from transformer.dataset import create_dataloader
 from transformer.gpt import GPTModel
+from transformer.io import save_model
 from transformer.tokenizer import GPTTokenizer, Tokenizer
 
 
@@ -177,28 +180,21 @@ def create_data(file, cfg: GPTConfig, batch_size):
     train_data = text_data[:split_idx]
     val_data = text_data[split_idx:]
 
-    train_lader = create_dataloader(
+    train_loader = create_dataloader(
         train_data, batch_size, cfg.context_len, stride=cfg.context_len, num_workers=0
     )
-    val_lader = create_dataloader(
+    val_loader = create_dataloader(
         val_data, batch_size, cfg.context_len, stride=cfg.context_len, num_workers=0
     )
 
-    return train_lader, val_lader
+    return train_loader, val_loader
 
 
-def train(file, start_context) -> tuple[GPTModel, GPTConfig]:
+def train(
+    file, model, optimizer, start_context, device: torch.device, epochs, batch_size
+):
     torch.manual_seed(123)
-    cfg = GPTConfig()
-    cfg.context_len = 256
-    model = GPTModel(cfg)
-
-    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0004, weight_decay=0.1)
-    num_epochs = 10
-
-    train_loader, val_loader = create_data(file, cfg, batch_size=2)
-
-    device = torch.device("cuda")
+    train_loader, val_loader = create_data(file, cfg, batch_size)
 
     model.to(device)
 
@@ -208,11 +204,37 @@ def train(file, start_context) -> tuple[GPTModel, GPTConfig]:
         val_loader,
         optimizer,
         device,
-        num_epochs,
+        epochs,
         eval_freq=5,
         eval_iter=5,
         start_context=start_context,
         tokenizer=GPTTokenizer(),
     )
 
-    return model, cfg
+
+if __name__ == "__main__":
+    parser = ArgumentParser()
+    parser.add_argument("--input", default="Every effort moves you")
+    parser.add_argument("--file", default="./assets/the-verdict.txt")
+    parser.add_argument("--batch-size", type=int, default=2)
+    parser.add_argument("--device", default="cuda")
+    parser.add_argument("--epochs", type=int, default=10)
+    parser.add_argument("--context-length", type=int, default=256)
+
+    args = parser.parse_args()
+
+    file = args.file
+    batch_size = args.batch_size
+    device = torch.device(args.device)
+    epochs = args.epochs
+    input = args.input
+
+    cfg = GPTConfig()
+    cfg.context_len = args.context_length
+    cfg.qkv_bias = True
+    model = GPTModel(cfg)
+
+    optimizer = torch.optim.AdamW(model.parameters(), lr=0.0004, weight_decay=0.1)
+    train(file, model, optimizer, input, device, epochs, batch_size)
+
+    save_model(model, optimizer, f"./data/trained/pre-trained.pth")

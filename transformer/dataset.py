@@ -32,7 +32,7 @@ def create_dataloader(
     text,
     batch_size=4,
     max_len=256,
-    stride=128,
+    stride=256,
     shuffle=True,
     drop_last=True,  # delete remaining data if less than batch size
     num_workers=0,
