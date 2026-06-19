@@ -148,6 +148,7 @@ if __name__ == "__main__":
     model_size = args.model_size
 
     param_dir = os.path.join(weight_path, model_size)
+    os.makedirs(weight_path, exist_ok=True)
 
     if not os.path.exists(param_dir):
         download_and_load_gpt2(model_size, weight_path)

@@ -1,9 +1,8 @@
 from argparse import ArgumentParser
 
-import torch
-from load_gpt import load_gpt_settings_params, load_weights_into_gpt
-from transformer.config import MODEL_CONFIGS, GPTConfig
+from transformer.config import  GPTConfig
 from transformer.gpt import GPTModel
+from transformer.io import load_model
 from transformer.tokenizer import GPTTokenizer
 from transformer.train import gen_text, text_to_token_ids, token_ids_to_text
 from transformer.utils import resolve_device
@@ -13,34 +12,24 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("--input", default="Every effort moves you")
     parser.add_argument("--device", default="cuda")
-    parser.add_argument(
-        "--model-size",
-        default="355M",
-        choices=tuple(MODEL_CONFIGS),
-    )
+    parser.add_argument("--context-length", type=int, default=256)
     args = parser.parse_args()
 
     input = args.input
-    model_size = args.model_size
-
-    model_config = MODEL_CONFIGS[model_size]
 
     cfg = GPTConfig()
-    cfg.emb_dim = model_config["emb_dim"]
-    cfg.n_layers = model_config["n_layers"]
-    cfg.n_heads = model_config["n_heads"]
+    cfg.context_len = args.context_length
     cfg.qkv_bias = True
     model = GPTModel(cfg)
     print(f"model param num: {model.param_num()}")
 
-    _, params = load_gpt_settings_params(model_size)
-
-    load_weights_into_gpt(model, params)
-
     device = resolve_device(args.device)
-
     model.to(device)
+
+    load_model(model, None, device, "./data/trained/pre-trained.pth")
+
     tokenizer = GPTTokenizer()
+
     ids = gen_text(
         model,
         idx=text_to_token_ids(input, tokenizer).to(device),

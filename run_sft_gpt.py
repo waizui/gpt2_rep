@@ -1,5 +1,4 @@
 from argparse import ArgumentParser
-from enum import Flag
 import json
 
 import numpy as np
@@ -11,6 +10,7 @@ from transformer.gpt import GPTModel
 from transformer.io import load_model
 from transformer.tokenizer import GPTTokenizer
 from transformer.train import gen_text, text_to_token_ids, token_ids_to_text
+from transformer.utils import resolve_device
 
 
 def run_test_data(model: GPTModel, tokenizer: GPTTokenizer, device, cfg, limit=10):
@@ -47,6 +47,7 @@ def main():
     parser.add_argument("--test", action="store_true")
     parser.add_argument("--instruction", default="Rewrite the sentence using a simile.")
     parser.add_argument("--input", default="The car is very fast.")
+    parser.add_argument("--device", default="cuda")
     parser.add_argument(
         "--model-size",
         default="355M",
@@ -75,7 +76,7 @@ def main():
     model = GPTModel(cfg)
     print(f"model param num: {model.param_num()}")
 
-    device = torch.device("cuda")
+    device = resolve_device(args.device)
     model.to(device)
 
     load_model(model, None, device, f"./data/trained/fine-tune/{model_size}.pth")

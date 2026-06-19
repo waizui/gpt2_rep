@@ -237,4 +237,4 @@ if __name__ == "__main__":
     optimizer = torch.optim.AdamW(model.parameters(), lr=0.0004, weight_decay=0.1)
     train(file, model, optimizer, input, device, epochs, batch_size)
 
-    save_model(model, optimizer, f"./data/trained/pre-trained.pth")
+    save_model(model, optimizer, "./data/trained/pre-trained.pth")
