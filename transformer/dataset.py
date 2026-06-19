@@ -80,8 +80,8 @@ def format_input(entry):
 
 def custom_collate_fn(
     batch,  # [batch_size]
-    pad_token_id=50256,  # vocab size, end of sequence id
-    ignore_index=-100,
+    pad_token_id=50256,  # end of sequence id
+    ignore_index=-100, 
     allowed_max_len=None,
     device="cuda",
 ):
@@ -94,6 +94,7 @@ def custom_collate_fn(
 
         padded = new_item + [pad_token_id] * (batch_max_len - len(new_item))
 
+        # same as part II, we want to minimize the cross entropy loss of model predictions and targets
         inputs = torch.tensor(padded[:-1])
         targets = torch.tensor(padded[1:])
 
@@ -110,7 +111,7 @@ def custom_collate_fn(
         input_lst.append(inputs)
         target_lst.append(targets)
 
-    inputs_tensor = torch.stack(input_lst).to(device)  # [batch_size,batch_max_len]
+    inputs_tensor = torch.stack(input_lst).to(device)  # [batch_size,batch_max_len-1]
     targets_tensor = torch.stack(target_lst).to(device) 
 
     return inputs_tensor, targets_tensor

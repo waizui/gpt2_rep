@@ -1,5 +1,6 @@
-tiktoken>=0.13.0,
-torch>=2.2.2,
-numpy>=2.2.6,
-tensorflow >= 2.18.0
-tqdm >= 4.66.1
+numpy>=2.2.6
+requests>=2.32.5
+tensorflow>=2.18.0
+tiktoken>=0.13.0
+torch>=2.2.2
+tqdm>=4.66.1
